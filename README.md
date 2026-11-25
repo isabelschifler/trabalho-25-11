@@ -176,41 +176,6 @@ Para chamar uma **view**, a interface executa um `SELECT` (por exemplo, `SELECT 
 
 Quando uma procedure ou trigger interrompe a operação com `SIGNAL`, o conector lança uma exceção e a mensagem em português é exibida na barra de mensagens da tela.
 
-## Como testar
-
-Com o banco recém-criado (`solucoes.sql` e depois os arquivos 01 a 04):
-
-```sql
--- Abrir um pedido: deve devolver 11, com status ABERTO
-CALL sp_abrir_pedido(5, 1, @novo);
-SELECT @novo;
-SELECT * FROM pedido WHERE id_pedido = @novo;
-
--- Adicionar um item (use o pedido novo)
-CALL sp_adicionar_item(@novo, 2, 2);
-
--- Finalizar pedidos
-CALL sp_finalizar_pedido(10);   -- PAGO, desconto 5.00, valor_total 25.65
-CALL sp_finalizar_pedido(9);    -- PAGO, desconto 0.00, valor_total 30.00
-CALL sp_finalizar_pedido(10);   -- erro: já está pago
-
--- Pedido pago não pode ser alterado (trigger da questão 15)
-UPDATE pedido SET valor_total = 1 WHERE id_pedido = 1;   -- erro
-
--- Reajuste de preços e histórico (trigger da questão 14)
-CALL sp_reajustar_precos_categoria(1, 10);
-SELECT * FROM historico_preco;
-```
-
-Erros que a questão 5 deve devolver, cada um com sua mensagem:
-
-```sql
-CALL sp_adicionar_item(1, 1, 1);       -- pedido pago
-CALL sp_adicionar_item(@novo, 15, 1);  -- produto inativo
-CALL sp_adicionar_item(@novo, 8, 1);   -- produto sem estoque
-```
-
-Cada `CALL sp_abrir_pedido` cria um pedido novo, então o número aumenta a cada teste. Para voltar ao estado inicial, rode o `solucoes.sql` e depois os arquivos 01 a 04.
 
 ## Uso de IA
 
