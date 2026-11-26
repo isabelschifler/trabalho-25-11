@@ -11,16 +11,16 @@ DROP TRIGGER IF EXISTS trg_item_baixa_estoque;
 
 DELIMITER $$
 CREATE TRIGGER trg_item_baixa_estoque
-AFTER INSERT ON item_pedido
-FOR EACH ROW
+AFTER INSERT ON item_pedido  -- depois de inserir uma linha em item_pedido, execute o que está abaixo
+FOR EACH ROW  -- roda uma linha por vez, se add 3 itens, vai disparar o trigger 3 vzs
 BEGIN
     UPDATE produto
-       SET estoque = estoque - NEW.quantidade
-     WHERE id_produto = NEW.id_produto;
+       SET estoque = estoque - NEW.quantidade  -- subtrai do estoque a quantidade vendida.
+     WHERE id_produto = NEW.id_produto; -- garante que só o produto daquele item é alterado.
 END$$
 DELIMITER ;
 
--- Teste: anote o estoque do produto 9, rode e consulte de novo (deve cair 1)
+
 -- SELECT estoque FROM produto WHERE id_produto = 9;
 -- CALL sp_abrir_pedido(5, 1, @novo);
 -- CALL sp_adicionar_item(@novo, 9, 1);
@@ -34,11 +34,11 @@ DROP TRIGGER IF EXISTS trg_item_devolve_estoque;
 
 DELIMITER $$
 CREATE TRIGGER trg_item_devolve_estoque
-AFTER DELETE ON item_pedido
-FOR EACH ROW
+AFTER DELETE ON item_pedido  -- depois de apagar uma linha de item_pedido, execute o que está abaixo".
+FOR EACH ROW  -- roda uma linha por vez, se add 3 itens, vai disparar o trigger 3 vzs
 BEGIN
     UPDATE produto
-       SET estoque = estoque + OLD.quantidade
+       SET estoque = estoque + OLD.quantidade  -- soma de volta ao estoque a quantidade do item removido
      WHERE id_produto = OLD.id_produto;
 END$$
 DELIMITER ;
@@ -55,12 +55,12 @@ DROP TRIGGER IF EXISTS trg_produto_historico_preco;
 
 DELIMITER $$
 CREATE TRIGGER trg_produto_historico_preco
-AFTER UPDATE ON produto
+AFTER UPDATE ON produto  -- empre que um produto for atualizado, o trigger será executado depois da atualização.
 FOR EACH ROW
 BEGIN
     IF NEW.preco <> OLD.preco THEN
-        INSERT INTO historico_preco (id_produto, preco_antigo, preco_novo, usuario)
-        VALUES (NEW.id_produto, OLD.preco, NEW.preco, CURRENT_USER());
+        INSERT INTO historico_preco (id_produto, preco_antigo, preco_novo, usuario)  --Inserir no histórico de preços
+        VALUES (NEW.id_produto, OLD.preco, NEW.preco, CURRENT_USER()); -- e os valores inseridos
     END IF;
 END$$
 DELIMITER ;
@@ -78,7 +78,7 @@ DROP TRIGGER IF EXISTS trg_pedido_bloqueia_alteracao;
 
 DELIMITER $$
 CREATE TRIGGER trg_pedido_bloqueia_alteracao
-BEFORE UPDATE ON pedido
+BEFORE UPDATE ON pedido  -- antes de qualquer atualização na tabela pedido, o trigger será executado.
 FOR EACH ROW
 BEGIN
     IF OLD.status IN ('PAGO', 'CANCELADO') THEN
