@@ -10,13 +10,14 @@ USE grao_da_serra;
 DROP VIEW IF EXISTS vw_cardapio;
 
 CREATE VIEW vw_cardapio AS
-SELECT p.id_produto,
+SELECT p.id_produto, 
        c.nome                           AS categoria,
        p.nome                           AS produto,
        p.preco,
        fn_situacao_estoque(p.id_produto) AS situacao
   FROM produto p
-  JOIN categoria c ON c.id_categoria = p.id_categoria
+  JOIN categoria c ON c.id_categoria = p.id_categoria   -- O JOIN junta duas tabelas.
+  -- p.id_categoria: a categoria à qual o produto pertence --  c.id_categoria: o ID da categoria na tabela categoria
  WHERE p.ativo = TRUE;
 
 -- Teste 
@@ -33,16 +34,16 @@ SELECT p.id_pedido,
        p.status,
        c.nome                       AS cliente,
        f.nome                       AS atendente,
-       COUNT(i.id_produto)          AS qtd_itens,
-       fn_total_pedido(p.id_pedido) AS valor_bruto,
-       p.desconto_percentual,
+       COUNT(i.id_produto)          AS qtd_itens,  -- quantidade de linhas de item do pedido
+       fn_total_pedido(p.id_pedido) AS valor_bruto, -- chama a funcao e soma o valor sem desconto
+       p.desconto_percentual,    -- desconto aplicado
        p.valor_total
   FROM pedido p
-  JOIN cliente c     ON c.id_cliente     = p.id_cliente
-  JOIN funcionario f ON f.id_funcionario = p.id_funcionario
-  LEFT JOIN item_pedido i ON i.id_pedido = p.id_pedido
+  JOIN cliente c     ON c.id_cliente     = p.id_cliente -- liga o pedido ao seu cliente, para pegar o nome.
+  JOIN funcionario f ON f.id_funcionario = p.id_funcionario  -- liga o pedido ao funcionário, para pegar o nome do atendente.
+  LEFT JOIN item_pedido i ON i.id_pedido = p.id_pedido -- liga o pedido aos seus itens.
  GROUP BY p.id_pedido, p.data_pedido, p.status, c.nome, f.nome,
-          p.desconto_percentual, p.valor_total;
+          p.desconto_percentual, p.valor_total;  -- vai juntar todas as linhas em um so pedido
 
 -- Teste 
 SELECT * FROM vw_pedidos_detalhados WHERE status = 'ABERTO';
@@ -58,11 +59,11 @@ SELECT p.id_produto,
        c.nome                      AS categoria,
        p.estoque,
        p.estoque_minimo,
-       (p.estoque_minimo - p.estoque) AS faltam
+       (p.estoque_minimo - p.estoque) AS faltam  -- coluna calculada: quanto falta para chegar ao mínimo
   FROM produto p
-  JOIN categoria c ON c.id_categoria = p.id_categoria
- WHERE p.ativo = TRUE
-   AND p.estoque <= p.estoque_minimo;
+  JOIN categoria c ON c.id_categoria = p.id_categoria  -- Liga cada produto à sua categoria
+ WHERE p.ativo = TRUE  -- ignora os produtos desativados
+   AND p.estoque <= p.estoque_minimo;    -- que sejam iguais ou menos que o estoque minimo
 
 -- Teste 
 SELECT * FROM vw_produtos_para_repor;
@@ -75,11 +76,11 @@ DROP VIEW IF EXISTS vw_vendas_por_categoria;
 
 CREATE VIEW vw_vendas_por_categoria AS
 SELECT c.nome AS categoria,
-       COALESCE(SUM(v.quantidade), 0)                    AS unidades,
-       COALESCE(SUM(v.quantidade * v.preco_unitario), 0) AS faturamento
-  FROM categoria c
-  LEFT JOIN produto p ON p.id_categoria = c.id_categoria
-  LEFT JOIN (SELECT i.id_produto, i.quantidade, i.preco_unitario
+       COALESCE(SUM(v.quantidade), 0)                    AS unidades, -- total de unidades vendidas
+       COALESCE(SUM(v.quantidade * v.preco_unitario), 0) AS faturamento  -- valor vendido: soma de quantidade × preço de cada item
+  FROM categoria c 
+  LEFT JOIN produto p ON p.id_categoria = c.id_categoria  -- liga cada categoria aos seus produtos. Com LEFT JOIN, uma categoria sem produtos continua aparecendo.
+  LEFT JOIN (SELECT i.id_produto, i.quantidade, i.preco_unitario  -- liga cada produto às suas vendas. Com LEFT JOIN, um produto que nunca foi vendido também não some.
                FROM item_pedido i
                JOIN pedido ped ON ped.id_pedido = i.id_pedido
               WHERE ped.status = 'PAGO') v
