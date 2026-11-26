@@ -10,15 +10,16 @@ DROP PROCEDURE IF EXISTS sp_abrir_pedido;
 
 DELIMITER $$
 CREATE PROCEDURE sp_abrir_pedido(
-    IN  p_id_cliente     INT,
+    IN  p_id_cliente     INT,  -- o in seria o paramentro de entrada, leva informação para dentro da procedure
     IN  p_id_funcionario INT,
-    OUT p_id_pedido      INT
+    OUT p_id_pedido      INT -- traz uma informação de volta para quem chamou.
+
 )
 BEGIN
-    INSERT INTO pedido (id_cliente, id_funcionario)
-    VALUES (p_id_cliente, p_id_funcionario);
+    INSERT INTO pedido (id_cliente, id_funcionario)  -- insere uma nova linha na tabela pedido
+    VALUES (p_id_cliente, p_id_funcionario); -- diz quais colunas serão preenchidas.
 
--- LAST_INSERT_ID() é uma função do MySQL que responde: "qual foi o número automático que acabei de gerar nesta conexão?
+-- o set vai guardar o valor no parametro e o last_insert devolve um numero automatico gerado
     SET p_id_pedido = LAST_INSERT_ID();
 END$$
 DELIMITER ;
@@ -35,7 +36,7 @@ DROP PROCEDURE IF EXISTS sp_adicionar_item;
 
 DELIMITER $$
 CREATE PROCEDURE sp_adicionar_item(
-    IN p_id_pedido  INT,
+    IN p_id_pedido  INT,  -- o in seria o paramentro de entrada, leva informação para dentro da procedure
     IN p_id_produto INT,
     IN p_quantidade INT
 )
@@ -47,9 +48,9 @@ BEGIN
     DECLARE v_ja_existe INT;
 
     -- 1) pedido existe e está aberto?
-    SELECT status INTO v_status
+    SELECT status INTO v_status -- seleciona a coluna status da tabela ´pedido e guarda o valor em v status
       FROM pedido
-     WHERE id_pedido = p_id_pedido;
+     WHERE id_pedido = p_id_pedido; -- 	coluna da tabela item_pedido= parametro(é o valor que você passa ao chamar a função)
 
 -- nessa linha verifica se o pedido existe
     IF v_status IS NULL THEN
@@ -57,6 +58,7 @@ BEGIN
             SET MESSAGE_TEXT = 'Pedido não encontrado.';
     END IF;
 
+-- se for diferente de aberto entao da erro
     IF v_status <> 'ABERTO' THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Não é possível adicionar itens: o pedido não está aberto.';
@@ -121,7 +123,7 @@ DROP PROCEDURE IF EXISTS sp_finalizar_pedido;
 
 DELIMITER $$
 
-CREATE PROCEDURE sp_finalizar_pedido(IN p_id_pedido INT)
+CREATE PROCEDURE sp_finalizar_pedido(IN p_id_pedido INT)   -- o in seria o paramentro de entrada, leva informação para dentro da procedure
 BEGIN
     DECLARE v_status VARCHAR(20);
     DECLARE v_id_cliente INT;
@@ -132,18 +134,19 @@ BEGIN
     SELECT status, id_cliente
     INTO v_status, v_id_cliente
     FROM pedido
-    WHERE id_pedido = p_id_pedido;
+    WHERE id_pedido = p_id_pedido; -- 	coluna da tabela item_pedido= parametro(é o valor que você passa ao chamar a função)
 
     IF v_status IS NULL THEN
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'Pedido não encontrado.';
+
     ELSEIF v_status <> 'ABERTO' THEN
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'Só é possível finalizar pedidos que estão abertos.';
     ELSE
-        SET v_bruto = fn_total_pedido(p_id_pedido);
-        SET v_desconto = fn_desconto_fidelidade(v_id_cliente);
-        SET v_total = ROUND(v_bruto * (1 - v_desconto / 100), 2);
+        SET v_bruto = fn_total_pedido(p_id_pedido);  -- Chama a primeira função que criei e guarda o total sem desconto em v_bruto.
+        SET v_desconto = fn_desconto_fidelidade(v_id_cliente); -- Chama a segunda função para descobrir o percentual de desconto (10, 5 ou 0) do cliente.
+        SET v_total = ROUND(v_bruto * (1 - v_desconto / 100), 2);  -- Calcula o total com desconto
 
         IF v_bruto = 0 THEN
             SIGNAL SQLSTATE '45000'
@@ -176,10 +179,10 @@ DROP PROCEDURE IF EXISTS sp_reajustar_precos_categoria;
 DELIMITER $$
 
 CREATE PROCEDURE sp_reajustar_precos_categoria(
-    IN p_id_categoria INT,
+    IN p_id_categoria INT,   -- o in seria o paramentro de entrada, leva informação para dentro da procedure
     IN p_percentual DECIMAL(5,2)
 )
-BEGIN
+BEGIN -- verifica se a categoria existe, o valor 1 seria para ver se tem algm linha  
     IF NOT EXISTS (
         SELECT 1
         FROM categoria
@@ -192,8 +195,8 @@ BEGIN
             SET MESSAGE_TEXT = 'O percentual não pode ser menor ou igual a -100.';
     ELSE
         UPDATE produto
-        SET preco = ROUND(preco * (1 + p_percentual / 100), 2)
-        WHERE id_categoria = p_id_categoria;
+        SET preco = ROUND(preco * (1 + p_percentual / 100), 2)  -- altera o preço dos produtos
+        WHERE id_categoria = p_id_categoria; -- só os produtos da categoria informada são alterados.
     END IF;
 END$$
 
