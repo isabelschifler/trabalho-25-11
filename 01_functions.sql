@@ -15,10 +15,12 @@ READS SQL DATA
 BEGIN
     DECLARE v_total DECIMAL(10,2);
 
+    -- o coalsce é para quando n tiver linhas ai ele devolver 0
+
     SELECT COALESCE(SUM(quantidade * preco_unitario), 0)
       INTO v_total
-      FROM item_pedido
-     WHERE id_pedido = p_id_pedido;
+      FROM item_pedido -- indica qual tabela ele vai consultar
+     WHERE id_pedido = p_id_pedido; -- 	coluna da tabela item_pedido= parametro(é o valor que você passa ao chamar a função)
 
     RETURN v_total;
 END$$
@@ -43,7 +45,7 @@ BEGIN
     SELECT estoque, estoque_minimo
       INTO v_estoque, v_minimo
       FROM produto
-     WHERE id_produto = p_id_produto;
+     WHERE id_produto = p_id_produto; -- 	coluna da tabela item_pedido= parametro(é o valor que você passa ao chamar a função)
 
     IF v_estoque = 0 THEN
         RETURN 'ESGOTADO';
@@ -73,7 +75,7 @@ RETURN (
              ELSE 0
            END
       FROM pedido
-     WHERE id_cliente = p_id_cliente
+     WHERE id_cliente = p_id_cliente -- 	coluna da tabela item_pedido= parametro(é o valor que você passa ao chamar a função)
        AND status = 'PAGO'
 );
 
